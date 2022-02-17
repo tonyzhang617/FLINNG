@@ -90,6 +90,71 @@ private:
   }
 };
 
+class L2DenseFlinng32 {
+
+public:
+  L2DenseFlinng32(uint64_t num_rows, uint64_t cells_per_row,
+                uint64_t data_dimension, uint64_t num_hash_tables,
+                uint64_t hashes_per_table, uint64_t sub_hash_bits = 2, uint64_t cutoff = 6)
+      : internal_flinng(num_rows, cells_per_row, num_hash_tables,
+                        1 << (hashes_per_table * sub_hash_bits)),
+        num_hash_tables(num_hash_tables), hashes_per_table(hashes_per_table),
+        data_dimension(data_dimension),
+        sub_hash_bits(sub_hash_bits), cutoff(cutoff),
+        rand_bits(num_hash_tables * hashes_per_table * data_dimension) {
+    for (uint64_t i = 0; i < rand_bits.size(); i++) {
+      rand_bits[i] = (rand() % 2) * 2 - 1; // 50% chance either 1 or -1
+    }
+  }
+
+  // See
+  // https://pybind11.readthedocs.io/en/stable/advanced/pycpp/numpy.html?highlight=numpy#arrays
+  // for explanation of why we do py::array::c_style and py::array::forcecase
+  // Basically ensures array is in dense row major order
+  void addPoints(pybind11::array_t<float, pybind11::array::c_style |
+                                              pybind11::array::forcecast>
+                     points) {
+
+    checkValidAndGetNumPoints<float>(points, data_dimension);
+    std::vector<uint64_t> hashes = getHashes(points);
+    internal_flinng.addPoints(hashes);
+  }
+
+  void prepareForQueries() { internal_flinng.prepareForQueries(); }
+
+  pybind11::array_t<uint64_t>
+  query(pybind11::array_t<float,
+                          pybind11::array::c_style | pybind11::array::forcecast>
+            queries,
+        uint32_t top_k) {
+
+    uint64_t num_queries =
+        checkValidAndGetNumPoints<float>(queries, data_dimension);
+    std::vector<uint64_t> hashes = getHashes(queries);
+    std::vector<uint64_t> results = internal_flinng.query(hashes, top_k);
+
+    return pybind11::array_t<uint64_t>(
+        std::vector<ptrdiff_t>{(int64_t)num_queries, top_k}, &results[0]);
+  }
+
+private:
+  Flinng internal_flinng;
+  const uint64_t num_hash_tables, hashes_per_table, data_dimension, sub_hash_bits, cutoff;
+  std::vector<int8_t> rand_bits;
+
+  std::vector<uint64_t>
+  getHashes(pybind11::array_t<float, pybind11::array::c_style |
+                                         pybind11::array::forcecast>
+                points) {
+    auto points_buf = points.request();
+    uint64_t num_points = (uint64_t)points_buf.shape[0];
+    float *points_ptr = (float *)points_buf.ptr;
+    return parallel_l2_lsh(points_ptr, num_points, data_dimension,
+                           rand_bits.data(), num_hash_tables, hashes_per_table,
+                           sub_hash_bits, cutoff);
+  }
+};
+
 class SparseFlinng32 {
 
 public:
@@ -184,6 +249,17 @@ PYBIND11_MODULE(flinng, m) {
            pybind11::arg("data_points"))
       .def("prepare_for_queries", &DenseFlinng32::prepareForQueries)
       .def("query", &DenseFlinng32::query, pybind11::arg("query_points"),
+           pybind11::arg("top_k"));
+
+  pybind11::class_<L2DenseFlinng32>(m, "l2_dense_32_bit")
+      .def(pybind11::init<uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t>(),
+           pybind11::arg("num_rows"), pybind11::arg("cells_per_row"),
+           pybind11::arg("data_dimension"), pybind11::arg("num_hash_tables"),
+           pybind11::arg("hashes_per_table"), pybind11::arg("sub_hash_bits") = 2, pybind11::arg("cutoff") = 6)
+      .def("add_points", &L2DenseFlinng32::addPoints,
+           pybind11::arg("data_points"))
+      .def("prepare_for_queries", &L2DenseFlinng32::prepareForQueries)
+      .def("query", &L2DenseFlinng32::query, pybind11::arg("query_points"),
            pybind11::arg("top_k"));
 
   pybind11::class_<SparseFlinng32>(m, "sparse_32_bit")

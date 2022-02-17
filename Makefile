@@ -22,7 +22,7 @@ all: $(BUILD_DIR)/$(TARGET_PYBIND)
 # Make target pybind
 $(BUILD_DIR)/$(TARGET_PYBIND): ./pybind/pybind.cpp $(OBJS)
 	$(MKDIR_P) $(dir $@)
-	g++ -shared -o $(BUILD_DIR)/$(TARGET_PYBIND) $(CPPFLAGS) -undefined dynamic_lookup -fPIC ./pybind/pybind.cpp $(SRCS)
+	g++ -shared -o $(BUILD_DIR)/$(TARGET_PYBIND) $(CPPFLAGS) -fPIC ./pybind/pybind.cpp $(SRCS)
 
 # Make c++ source into object files
 $(BUILD_DIR)/%.cpp.o: %.cpp
