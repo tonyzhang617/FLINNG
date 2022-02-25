@@ -4,8 +4,7 @@
 #include "LshFunctions.h"
 #include <cstdint>
 #include <iostream>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
+#include <algorithm>
 #include <stdexcept>
 #include <vector>
 
@@ -24,7 +23,7 @@ public:
 
   // All the hashes for point 1 come first, etc.
   // Size of hashes should be multiple of num_hash_tables
-  void addPoints(std::vector<uint64_t> hashes) {
+  void addPoints(const std::vector<uint64_t> &hashes) {
 
     uint64_t num_points = hashes.size() / num_hash_tables;
     std::vector<uint64_t> random_buckets(num_rows * num_points);
@@ -72,7 +71,7 @@ public:
   // Again all the hashes for point 1 come first, etc.
   // Size of hashes should be multiple of num_hash_tables
   // Results are similarly ordered
-  std::vector<uint64_t> query(std::vector<uint64_t> hashes, uint32_t top_k) {
+  std::vector<uint64_t> query(const std::vector<uint64_t> &hashes, uint32_t top_k) {
 
     uint64_t num_queries = hashes.size() / num_hash_tables;
     std::vector<uint64_t> results(top_k * num_queries);
