@@ -84,7 +84,7 @@ parallel_densified_minhash(const uint64_t *points, uint64_t num_points,
                              hash_range_pow, random_seed);
   }
 
-  return move(result);
+  return result;
 }
 
 std::vector<uint64_t>
@@ -102,7 +102,7 @@ parallel_densified_minhash(const std::vector<std::vector<uint64_t>> &points,
                              random_seed);
   }
 
-  return move(result);
+  return result;
 }
 
 std::vector<uint64_t> parallel_srp(const float *dense_data, uint64_t num_points,
@@ -132,7 +132,7 @@ std::vector<uint64_t> parallel_srp(const float *dense_data, uint64_t num_points,
     }
   }
 
-  return move(result);
+  return result;
 }
 
 std::vector<uint64_t> parallel_l2_lsh(const float *dense_data, uint64_t num_points,
@@ -174,7 +174,7 @@ std::vector<uint64_t> parallel_l2_lsh(const float *dense_data, uint64_t num_poin
     }
   }
 
-  return move(result);
+  return result;
 }
 
 #endif
