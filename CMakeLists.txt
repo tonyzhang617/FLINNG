@@ -9,3 +9,6 @@ find_package(OpenMP)
 if(OpenMP_CXX_FOUND)
     target_link_libraries(flinng PUBLIC OpenMP::OpenMP_CXX)
 endif()
+
+add_executable(test ${PROJECT_SOURCE_DIR}/test/test_dense.cpp)
+target_link_libraries(test flinng)

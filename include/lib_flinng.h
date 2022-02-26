@@ -7,9 +7,8 @@ class BaseFlinng32 {
 public:
   BaseFlinng32(uint64_t num_rows, uint64_t cells_per_row,
                 uint64_t data_dimension, uint64_t num_hash_tables,
-                uint64_t hashes_per_table)
-      : internal_flinng(num_rows, cells_per_row, num_hash_tables,
-                        1 << hashes_per_table),
+                uint64_t hashes_per_table, uint64_t hash_range)
+      : internal_flinng(num_rows, cells_per_row, num_hash_tables, hash_range),
         num_hash_tables(num_hash_tables), hashes_per_table(hashes_per_table),
         data_dimension(data_dimension),
         rand_bits(num_hash_tables * hashes_per_table * data_dimension) {
@@ -64,6 +63,12 @@ protected:
 };
 
 class DenseFlinng32: public BaseFlinng32 {
+public:
+  DenseFlinng32(uint64_t num_rows, uint64_t cells_per_row,
+                uint64_t data_dimension, uint64_t num_hash_tables, uint64_t hashes_per_table)
+      : BaseFlinng32(num_rows, cells_per_row, data_dimension, num_hash_tables, hashes_per_table, 1 << hashes_per_table) {
+
+  }
 protected:
   inline std::vector<uint64_t> getHashes(const float *points, uint64_t num_points) override {
     return move(parallel_srp(points, num_points, data_dimension, rand_bits.data(), num_hash_tables, hashes_per_table));
@@ -76,7 +81,7 @@ public:
   L2DenseFlinng32(uint64_t num_rows, uint64_t cells_per_row,
                   uint64_t data_dimension, uint64_t num_hash_tables,
                   uint64_t hashes_per_table, uint64_t sub_hash_bits = 2, uint64_t cutoff = 6)
-      : BaseFlinng32(num_rows, cells_per_row, data_dimension, num_hash_tables, hashes_per_table),
+      : BaseFlinng32(num_rows, cells_per_row, data_dimension, num_hash_tables, hashes_per_table, 1 << (hashes_per_table * sub_hash_bits)),
         sub_hash_bits(sub_hash_bits), cutoff(cutoff) {}
 
 protected:
@@ -141,10 +146,6 @@ protected:
   const uint32_t seed;
 
   inline std::vector<uint64_t> getHashes(const uint64_t *points, uint64_t num_points, uint64_t point_dimension) {
-    // auto points_buf = data.request();
-    // uint64_t num_points = (uint64_t)points_buf.shape[0];
-    // uint64_t *points_ptr = (uint64_t *)points_buf.ptr;
-    // uint64_t point_dimension = (uint64_t)points_buf.shape[1];
     return move(parallel_densified_minhash(points, num_points, point_dimension, num_hash_tables, hashes_per_table, hash_range_pow, seed));
   }
 
