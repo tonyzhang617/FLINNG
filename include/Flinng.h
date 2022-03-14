@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <vector>
+#include "io.h"
 
 // TODO: Add back 16 bit FLINNG, check input
 // TODO: Reproduce experiments
@@ -93,7 +94,7 @@ public:
 
       std::vector<uint32_t> sorted[num_hash_tables + 1];
       uint32_t size_guess = num_rows * cells_per_row / (num_hash_tables + 1);
-      for (std::vector<uint32_t> &v : sorted) {
+      for (std::vector<uint32_t> &v: sorted) {
         v.reserve(size_guess);
       }
 
@@ -105,8 +106,8 @@ public:
         std::vector<uint8_t> num_counts(total_points_added, 0);
         uint32_t num_found = 0;
         for (int32_t rep = num_hash_tables; rep >= 0; --rep) {
-          for (uint32_t bin : sorted[rep]) {
-            for (uint32_t point : cell_membership[bin]) {
+          for (uint32_t bin: sorted[rep]) {
+            for (uint32_t point: cell_membership[bin]) {
               if (++num_counts[point] == num_rows) {
                 results[top_k * query_id + num_found] = point;
                 if (++num_found == top_k) {
@@ -118,11 +119,11 @@ public:
         }
       } else {
         char *num_counts =
-            (char *)calloc(total_points_added / 8 + 1, sizeof(char));
+            (char *) calloc(total_points_added / 8 + 1, sizeof(char));
         uint32_t num_found = 0;
         for (int32_t rep = num_hash_tables; rep >= 0; --rep) {
-          for (uint32_t bin : sorted[rep]) {
-            for (uint32_t point : cell_membership[bin]) {
+          for (uint32_t bin: sorted[rep]) {
+            for (uint32_t point: cell_membership[bin]) {
               if (num_counts[(point / 8)] & (1 << (point % 8))) {
                 results[top_k * query_id + num_found] = point;
                 if (++num_found == top_k) {
@@ -136,14 +137,69 @@ public:
           }
         }
       }
-    end_of_query:;
+      end_of_query:;
     }
 
     return results;
   }
 
+  uint64_t num_points_added() const {
+    return total_points_added;
+  }
+
+  void write_content_to_index(flinng::FileIO &index) {
+    flinng::write_verify(&num_rows, sizeof(num_rows), 1, index);
+    flinng::write_verify(&cells_per_row, sizeof(cells_per_row), 1, index);
+    flinng::write_verify(&num_hash_tables, sizeof(num_hash_tables), 1, index);
+    flinng::write_verify(&hash_range, sizeof(hash_range), 1, index);
+    flinng::write_verify(&total_points_added, sizeof(total_points_added), 1, index);
+
+    size_t tmp = inverted_flinng_index.size();
+    flinng::write_verify(&tmp, sizeof(size_t), 1, index);
+    for (size_t i = 0; i < tmp; ++i) {
+      size_t tmp2 = inverted_flinng_index[i].size();
+      flinng::write_verify(&tmp2, sizeof(size_t), 1, index);
+      flinng::write_verify(inverted_flinng_index[i].data(), sizeof(uint32_t), tmp2, index);
+    }
+
+    tmp = cell_membership.size();
+    flinng::write_verify(&tmp, sizeof(size_t), 1, index);
+    for (size_t i = 0; i < tmp; ++i) {
+      size_t tmp2 = cell_membership[i].size();
+      flinng::write_verify(&tmp2, sizeof(size_t), 1, index);
+      flinng::write_verify(cell_membership[i].data(), sizeof(uint64_t), tmp2, index);
+    }
+  }
+
+  void read_content_from_index(flinng::FileIO &index) {
+    flinng::read_verify(&num_rows, sizeof(num_rows), 1, index);
+    flinng::read_verify(&cells_per_row, sizeof(cells_per_row), 1, index);
+    flinng::read_verify(&num_hash_tables, sizeof(num_hash_tables), 1, index);
+    flinng::read_verify(&hash_range, sizeof(hash_range), 1, index);
+    flinng::read_verify(&total_points_added, sizeof(total_points_added), 1, index);
+
+    size_t tmp;
+    flinng::read_verify(&tmp, sizeof(size_t), 1, index);
+    inverted_flinng_index.resize(tmp);
+    for (size_t i = 0; i < tmp; ++i) {
+      size_t tmp2;
+      flinng::read_verify(&tmp2, sizeof(size_t), 1, index);
+      inverted_flinng_index[i].resize(tmp2);
+      flinng::read_verify(inverted_flinng_index[i].data(), sizeof(uint32_t), tmp2, index);
+    }
+
+    flinng::read_verify(&tmp, sizeof(size_t), 1, index);
+    cell_membership.resize(tmp);
+    for (size_t i = 0; i < tmp; ++i) {
+      size_t tmp2;
+      flinng::read_verify(&tmp2, sizeof(size_t), 1, index);
+      cell_membership[i].resize(tmp2);
+      flinng::read_verify(cell_membership[i].data(), sizeof(uint64_t), tmp2, index);
+    }
+  }
+
 private:
-  const uint64_t num_rows, cells_per_row, num_hash_tables, hash_range;
+  uint64_t num_rows, cells_per_row, num_hash_tables, hash_range;
   uint64_t total_points_added = 0;
   std::vector<std::vector<uint32_t>> inverted_flinng_index;
   std::vector<std::vector<uint64_t>> cell_membership;

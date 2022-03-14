@@ -32,30 +32,67 @@ int main() {
     gt[i] = e;
   }
 
+  flinng::FlinngBuilder spec(flinng_num_rows, flinngs_cells_per_row, flinng_num_hash_tables, flinng_hashes_per_table);
   {
-    DenseFlinng32 index(flinng_num_rows, flinngs_cells_per_row, data_dim, flinng_num_hash_tables,
-                        flinng_hashes_per_table);
-    index.addPoints(dataset);
-    index.prepareForQueries();
-    auto res = index.query(queries, 1);
+    flinng::DenseFlinng32 index(data_dim, &spec);
+    index.add_and_store(dataset.data(), dataset_size);
+    index.finalize_construction();
+    uint64_t *descriptors;
+    float distances[query_size];
+    index.search_with_distance(queries.data(), query_size, 1, descriptors, distances);
     uint32_t c = 0;
+    cout << "Distances: ";
     for (uint64_t i = 0; i < query_size; ++i) {
-      c += static_cast<int>(res[i]) == gt[i];
+      c += static_cast<int>(descriptors[i]) == gt[i];
+      cout << distances[i] << ' ';
     }
-    cout << "Recall (Angular Similarity) = " << static_cast<float>(c) / query_size << endl;
+    cout << "\nRecall (Angular Similarity) = " << static_cast<float>(c) / query_size << endl;
+    index.write_index("dense_index");
   }
 
   {
-    L2DenseFlinng32 index(flinng_num_rows, flinngs_cells_per_row, data_dim, flinng_num_hash_tables,
-                          flinng_hashes_per_table);
-    index.addPoints(dataset);
-    index.prepareForQueries();
-    auto res = index.query(queries, 1);
+    flinng::DenseFlinng32 index("dense_index");
+    uint64_t *descriptors;
+    float distances[query_size];
+    index.search_with_distance(queries.data(), query_size, 1, descriptors, distances);
     uint32_t c = 0;
+    cout << "Distances: ";
     for (uint64_t i = 0; i < query_size; ++i) {
-      c += static_cast<int>(res[i]) == gt[i];
+      c += static_cast<int>(descriptors[i]) == gt[i];
+      cout << distances[i] << ' ';
     }
-    cout << "Recall (L2 Similarity) = " << static_cast<float>(c) / query_size << endl;
+    cout << "\nRecall (Angular Similarity) = " << static_cast<float>(c) / query_size << endl;
+  }
+
+  {
+    flinng::L2DenseFlinng32 index(data_dim, &spec);
+    index.add_and_store(dataset.data(), dataset_size);
+    index.finalize_construction();
+    uint64_t *descriptors;
+    float distances[query_size];
+    index.search_with_distance(queries.data(), query_size, 1, descriptors, distances);
+    uint32_t c = 0;
+    cout << "Distances: ";
+    for (uint64_t i = 0; i < query_size; ++i) {
+      c += static_cast<int>(descriptors[i]) == gt[i];
+      cout << distances[i] << ' ';
+    }
+    cout << "\nRecall (L2 Similarity) = " << static_cast<float>(c) / query_size << endl;
+    index.write_index("l2_index");
+  }
+
+  {
+    flinng::L2DenseFlinng32 index("l2_index");
+    uint64_t *descriptors;
+    float distances[query_size];
+    index.search_with_distance(queries.data(), query_size, 1, descriptors, distances);
+    uint32_t c = 0;
+    cout << "Distances: ";
+    for (uint64_t i = 0; i < query_size; ++i) {
+      c += static_cast<int>(descriptors[i]) == gt[i];
+      cout << distances[i] << ' ';
+    }
+    cout << "\nRecall (L2 Similarity) = " << static_cast<float>(c) / query_size << endl;
   }
 
   return 0;
