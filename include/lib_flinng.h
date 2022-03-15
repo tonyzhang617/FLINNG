@@ -26,9 +26,9 @@ namespace flinng {
     FlinngBuilder(uint64_t num_rows = 3, uint64_t cells_per_row = (1 << 12),
                   uint64_t num_hash_tables = (1 << 9), uint64_t hashes_per_table = 14,
                   uint64_t sub_hash_bits = 2, uint64_t cut_off = 6)
-                  : num_rows(num_rows), cells_per_row(cells_per_row), num_hash_tables(num_hash_tables),
-                    hashes_per_table(hashes_per_table), sub_hash_bits(sub_hash_bits),
-                    cut_off(cut_off) {}
+        : num_rows(num_rows), cells_per_row(cells_per_row), num_hash_tables(num_hash_tables),
+          hashes_per_table(hashes_per_table), sub_hash_bits(sub_hash_bits),
+          cut_off(cut_off) {}
   };
 
 
@@ -57,11 +57,9 @@ namespace flinng {
 
     void add_and_store(float *input, uint64_t num_items);
 
-    void search(float *queries, uint64_t num_queries, uint32_t topk,
-                uint64_t *&descriptors);
+    void search(float *queries, unsigned n, unsigned k, long *ids);
 
-    void search_with_distance(float *queries, uint64_t num_queries, uint32_t topk,
-                              uint64_t *&descriptors, float *distances);
+    void search_with_distance(float *queries, unsigned n, unsigned k, long *ids, float *distances);
 
     void write_index(const char *fname);
 
@@ -102,7 +100,9 @@ namespace flinng {
 
   protected:
     DenseFlinng32(uint64_t data_dimension, FlinngBuilder &&def);
+
     float compute_distance(float *a, float *b) override;
+
     inline std::vector<uint64_t> getHashes(const float *points, uint64_t num_points) override {
       return parallel_srp(points, num_points, data_dimension, rand_bits.data(), num_hash_tables, hashes_per_table);
     }
@@ -124,6 +124,7 @@ namespace flinng {
     uint64_t sub_hash_bits, cutoff;
 
     L2DenseFlinng32();
+
     L2DenseFlinng32(uint64_t data_dimension, FlinngBuilder &&def);
 
     void write_additional_content_to_index(FileIO &index) override;

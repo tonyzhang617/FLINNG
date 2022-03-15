@@ -79,11 +79,27 @@ namespace flinng {
     bases.insert(bases.end(), input, input + num_items * data_dimension);
   }
 
+  void BaseDenseFlinng32::search(float *queries, unsigned n, unsigned k, long *ids) {
+    std::vector<uint64_t> results = query(queries, n, k);
+    std::copy(results.begin(), results.end(), ids);
+  }
 
-  void BaseDenseFlinng32::search(float *queries, uint64_t num_queries, uint32_t topk, uint64_t *&descriptors) {
-    std::vector<uint64_t> results = query(queries, num_queries, topk);
-    descriptors = new uint64_t[results.size()];
-    std::copy(results.begin(), results.end(), descriptors);
+  void BaseDenseFlinng32::search_with_distance(float *queries, unsigned n, unsigned k, long *ids, float *distances) {
+    if (bases.size() / data_dimension != internal_flinng.num_points_added()) {
+      std::cerr << "Dataset is not stored! Distance cannot be calculated. Invoke add_with_store() to store dataset."
+                << std::endl;
+      return;
+    }
+
+    search(queries, n, k, ids);
+
+#pragma omp parallel for
+    for (int i = 0; i < n; i++) {
+      for (int j = 0; j < k; j++) {
+        distances[i * k + j] = compute_distance(queries + data_dimension * i,
+                                                bases.data() + data_dimension * ids[i * k + j]);
+      }
+    }
   }
 
   float DenseFlinng32::compute_distance(float *a, float *b) {
@@ -107,26 +123,6 @@ namespace flinng {
     }
 
     return sqrtf(accu);
-  }
-
-  void
-  BaseDenseFlinng32::search_with_distance(float *queries, uint64_t num_queries, uint32_t topk, uint64_t *&descriptors,
-                                          float *distances) {
-    if (bases.size() / data_dimension != internal_flinng.num_points_added()) {
-      std::cerr << "Dataset is not stored! Distance cannot be calculated. Invoke add_with_store() to store dataset."
-                << std::endl;
-      return;
-    }
-
-    search(queries, num_queries, topk, descriptors);
-
-#pragma omp parallel for
-    for (int i = 0; i < num_queries; i++) {
-      for (int j = 0; j < topk; j++) {
-        distances[i * topk + j] = compute_distance(queries + data_dimension * i,
-                                                   bases.data() + data_dimension * descriptors[i * topk + j]);
-      }
-    }
   }
 
   void BaseDenseFlinng32::fetch_descriptors(long id, float *desc) {
