@@ -3,7 +3,7 @@ project(FLINNG)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_FLAGS "-O3 -ffast-math -Wall -Werror")
 
-add_library(flinng SHARED ${PROJECT_SOURCE_DIR}/src/lib_flinng.cpp ${PROJECT_SOURCE_DIR}/src/LshFunctions.cpp)
+add_library(flinng SHARED ${PROJECT_SOURCE_DIR}/src/lib_flinng.cpp ${PROJECT_SOURCE_DIR}/src/LshFunctions.cpp ${PROJECT_SOURCE_DIR}/src/Flinng.cpp ${PROJECT_SOURCE_DIR}/src/io.cpp)
 target_include_directories(flinng PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 find_package(OpenMP)

@@ -12,6 +12,10 @@
 
 namespace flinng {
 
+  void write_verify(void *ptr, size_t size, size_t count, FileIO &file);
+
+  void read_verify(void *ptr, size_t size, size_t count, FileIO &file);
+
   class FlinngBuilder {
 
   public:

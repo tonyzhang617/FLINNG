@@ -1,6 +1,24 @@
 #include "lib_flinng.h"
 
 namespace flinng {
+  void write_verify(void *ptr, size_t size, size_t count, FileIO &file) {
+    size_t ret = fwrite(ptr, size, count, file.fp);
+    if (ret != count) {
+      std::cerr << "Error while writing to " << file.fname
+                << " ret==" << ret << " != count==" << count << " errno: "
+                << strerror(errno) << std::endl;
+    }
+  }
+
+  void read_verify(void *ptr, size_t size, size_t count, FileIO &file) {
+    size_t ret = fread(ptr, size, count, file.fp);
+    if (ret != count) {
+      std::cerr << "Error while reading " << file.fname
+                << " ret==" << ret << " != count==" << count << " errno: "
+                << strerror(errno) << std::endl;
+    }
+  }
+
   BaseDenseFlinng32::BaseDenseFlinng32(uint64_t num_rows, uint64_t cells_per_row, uint64_t data_dimension,
                                        uint64_t num_hash_tables,
                                        uint64_t hashes_per_table, uint64_t hash_range)
