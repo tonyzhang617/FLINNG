@@ -120,8 +120,8 @@ namespace flinng {
     search(queries, n, k, ids);
 
 #pragma omp parallel for
-    for (int i = 0; i < n; i++) {
-      for (int j = 0; j < k; j++) {
+    for (unsigned i = 0; i < n; i++) {
+      for (unsigned j = 0; j < k; j++) {
         distances[i * k + j] = compute_distance(queries + data_dimension * i,
                                                 bases.data() + data_dimension * ids[i * k + j]);
       }
@@ -132,7 +132,7 @@ namespace flinng {
     float top = 0;
     float bottom_a = 0;
     float bottom_b = 0;
-    for (int i = 0; i < data_dimension; ++i) {
+    for (uint64_t i = 0; i < data_dimension; ++i) {
       top += a[i] * b[i];
       bottom_a += a[i] * a[i];
       bottom_b += b[i] * b[i];
@@ -143,7 +143,7 @@ namespace flinng {
 
   float L2DenseFlinng32::compute_distance(float *a, float *b) {
     float accu = 0;
-    for (int i = 0; i < data_dimension; ++i) {
+    for (uint64_t i = 0; i < data_dimension; ++i) {
       float tmp = a[i] - b[i];
       accu += tmp * tmp;
     }

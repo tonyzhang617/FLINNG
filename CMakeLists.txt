@@ -11,8 +11,8 @@ if(OpenMP_CXX_FOUND)
     target_link_libraries(flinng PUBLIC OpenMP::OpenMP_CXX)
 endif()
 
-add_executable(test ${PROJECT_SOURCE_DIR}/test/test_dense.cpp)
-target_link_libraries(test flinng)
+add_executable(flinng_test ${PROJECT_SOURCE_DIR}/test/test_dense.cpp)
+target_link_libraries(flinng_test flinng)
 
 install(TARGETS flinng DESTINATION lib)
 install(FILES ${PROJECT_SOURCE_DIR}/include/lib_flinng.h ${PROJECT_SOURCE_DIR}/include/io.h ${PROJECT_SOURCE_DIR}/include/Flinng.h ${PROJECT_SOURCE_DIR}/include/LshFunctions.h DESTINATION include)
