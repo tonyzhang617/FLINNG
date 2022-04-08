@@ -148,6 +148,7 @@ std::vector<uint64_t> parallel_l2_lsh(const float *dense_data, uint64_t num_poin
   for (uint64_t data_id = 0; data_id < num_points; data_id++) {
     for (uint64_t rep = 0; rep < num_tables; rep++) {
       uint64_t hash = 0;
+      uint64_t accu = 1;
       for (uint64_t bit = 0; bit < hashes_per_table; bit++) {
         double sum = 0;
         for (uint64_t j = 0; j < data_dimension; j++) {
@@ -166,7 +167,8 @@ std::vector<uint64_t> parallel_l2_lsh(const float *dense_data, uint64_t num_poin
         } else if (sub_hash >= static_cast<int64_t>(num_bins)) {
           sub_hash = num_bins - 1;
         }
-        hash += static_cast<uint64_t>(sub_hash) << (bit * sub_hash_bits);
+        hash += static_cast<uint64_t>(sub_hash) * accu;
+        accu *= 1 << sub_hash_bits;
       }
       result[data_id * num_tables + rep] = hash;
     }

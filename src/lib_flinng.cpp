@@ -1,5 +1,13 @@
 #include "lib_flinng.h"
 
+static uint64_t power(const uint64_t base, const uint64_t exp) {
+  uint64_t accu = 1;
+  for (uint64_t e = 0; e < exp; ++e) {
+    accu *= base;
+  }
+  return accu;
+}
+
 namespace flinng {
   void write_verify(void *ptr, size_t size, size_t count, FileIO &file) {
     size_t ret = fwrite(ptr, size, count, file.fp);
@@ -229,13 +237,12 @@ namespace flinng {
                                    uint64_t data_dimension, uint64_t num_hash_tables,
                                    uint64_t hashes_per_table, uint64_t sub_hash_bits, uint64_t cutoff)
       : BaseDenseFlinng32(num_rows, cells_per_row, data_dimension, num_hash_tables, hashes_per_table,
-                          1 << (hashes_per_table * sub_hash_bits)),
+                          power(1 << sub_hash_bits, hashes_per_table)),
         sub_hash_bits(sub_hash_bits), cutoff(cutoff) {}
 
   L2DenseFlinng32::L2DenseFlinng32(uint64_t data_dimension, FlinngBuilder &&def)
-      : BaseDenseFlinng32(def.num_rows, def.cells_per_row, data_dimension, def.num_hash_tables, def.hashes_per_table,
-                          1 << (def.hashes_per_table * def.sub_hash_bits)),
-        sub_hash_bits(def.sub_hash_bits), cutoff(def.cut_off) {}
+      : L2DenseFlinng32(def.num_rows, def.cells_per_row, data_dimension, def.num_hash_tables, def.hashes_per_table,
+                        def.sub_hash_bits, def.cut_off) {}
 
   L2DenseFlinng32::L2DenseFlinng32(uint64_t data_dimension, FlinngBuilder *def)
       : L2DenseFlinng32(data_dimension, def == nullptr ? FlinngBuilder() : *def) {}
