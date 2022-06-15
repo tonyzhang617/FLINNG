@@ -45,12 +45,6 @@ namespace flinng {
 
   BaseDenseFlinng32::BaseDenseFlinng32() : BaseDenseFlinng32(0, 0, 0, 0, 0, 0) {}
 
-  BaseDenseFlinng32::BaseDenseFlinng32(const char *fname)
-      : BaseDenseFlinng32() {
-    read_index(fname);
-  }
-
-
   void BaseDenseFlinng32::addPoints(const std::vector<float> &points) {
     if (points.size() < data_dimension || points.size() % data_dimension != 0) {
       throw std::invalid_argument("The rows (each point) must be of dimension " +
@@ -155,6 +149,26 @@ namespace flinng {
     std::copy(bases.begin() + id * data_dimension, bases.begin() + (id + 1) * data_dimension, desc);
   }
 
+  BaseDenseFlinng32 * BaseDenseFlinng32::from_index(const char *fname) {
+    FileIO idx_stream(fname);
+    if (idx_stream.fp == NULL) {
+      std::cerr << "Error occurred while opening index file for reading" << std::endl;
+      return nullptr;
+    }
+
+    bool is_l2 = BaseDenseFlinng32::read_type_from_index(idx_stream);
+    BaseDenseFlinng32 *obj;
+    if (is_l2) {
+      obj = new L2DenseFlinng32();
+    } else {
+      obj = new DenseFlinng32();
+    }
+    obj->read_content_from_index(idx_stream);
+    obj->read_additional_content_from_index(idx_stream);
+
+    return obj;
+  }
+
   void BaseDenseFlinng32::write_content_to_index(FileIO &index) {
     internal_flinng.write_content_to_index(index);
 
@@ -196,19 +210,30 @@ namespace flinng {
       return;
     }
 
+    write_type_to_index(idx_stream);
     write_content_to_index(idx_stream);
     write_additional_content_to_index(idx_stream);
   }
 
-  void BaseDenseFlinng32::read_index(const char *fname) {
-    FileIO idx_stream(fname);
-    if (idx_stream.fp == NULL) {
-      std::cerr << "Error occurred while opening index file for reading" << std::endl;
-      return;
-    }
+  bool BaseDenseFlinng32::read_type_from_index(FileIO &index) {
+    bool is_l2;
+    read_verify(&is_l2, sizeof(bool), 1, index);
+    return is_l2;
+  }
 
-    read_content_from_index(idx_stream);
-    read_additional_content_from_index(idx_stream);
+  void DenseFlinng32::write_type_to_index(FileIO &index) {
+    bool is_l2 = false;
+    write_verify(&is_l2, sizeof(bool), 1, index);
+  }
+
+  void L2DenseFlinng32::write_type_to_index(FileIO &index) {
+    bool is_l2 = true;
+    write_verify(&is_l2, sizeof(bool), 1, index);
+  }
+
+  DenseFlinng32::DenseFlinng32()
+    : DenseFlinng32(0, 0, 0, 0, 0) {
+
   }
 
   DenseFlinng32::DenseFlinng32(uint64_t num_rows, uint64_t cells_per_row,
@@ -229,10 +254,6 @@ namespace flinng {
 
   }
 
-  DenseFlinng32::DenseFlinng32(const char *fname) {
-    read_index(fname);
-  }
-
   L2DenseFlinng32::L2DenseFlinng32(uint64_t num_rows, uint64_t cells_per_row,
                                    uint64_t data_dimension, uint64_t num_hash_tables,
                                    uint64_t hashes_per_table, uint64_t sub_hash_bits, uint64_t cutoff)
@@ -249,10 +270,6 @@ namespace flinng {
 
   L2DenseFlinng32::L2DenseFlinng32()
       : L2DenseFlinng32(0, 0, 0, 0, 0, 0, 0) {}
-
-  L2DenseFlinng32::L2DenseFlinng32(const char *fname) : L2DenseFlinng32() {
-    read_index(fname);
-  }
 
   void L2DenseFlinng32::write_additional_content_to_index(FileIO &index) {
     write_verify(&sub_hash_bits, sizeof(sub_hash_bits), 1, index);
