@@ -51,10 +51,11 @@ int main() {
   }
 
   {
-    flinng::DenseFlinng32 index("dense_index");
+    std::string file_name="dense_index";
+    flinng::DenseFlinng32 *index = dynamic_cast<flinng::DenseFlinng32*>(flinng::BaseDenseFlinng32::from_index(file_name.c_str()));
     long ids[query_size];
     float distances[query_size];
-    index.search_with_distance(queries.data(), query_size, 1, ids, distances);
+    index->search_with_distance(queries.data(), query_size, 1, ids, distances);
     uint32_t c = 0;
     cout << "Distances: ";
     for (uint64_t i = 0; i < query_size; ++i) {
@@ -82,10 +83,11 @@ int main() {
   }
 
   {
-    flinng::L2DenseFlinng32 index("l2_index");
+    std::string file_name="l2_index";
+    flinng::L2DenseFlinng32 *index = dynamic_cast<flinng::L2DenseFlinng32*>(flinng::BaseDenseFlinng32::from_index(file_name.c_str()));
     long ids[query_size];
     float distances[query_size];
-    index.search_with_distance(queries.data(), query_size, 1, ids, distances);
+    index->search_with_distance(queries.data(), query_size, 1, ids, distances);
     uint32_t c = 0;
     cout << "Distances: ";
     for (uint64_t i = 0; i < query_size; ++i) {
